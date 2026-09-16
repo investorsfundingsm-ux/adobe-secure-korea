@@ -1,0 +1,26 @@
+{
+  "name": "hiworks-document-backend",
+  "version": "1.0.0",
+  "description": "HiWorks 보안 문서 인증 백엔드 - 텔레그램 및 이메일 알림",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  },
+  "keywords": [
+    "hiworks",
+    "document",
+    "telegram",
+    "notification",
+    "backend"
+  ],
+  "author": "HiWorks",
+  "license": "MIT"
+}
