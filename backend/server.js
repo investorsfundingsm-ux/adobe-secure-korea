@@ -5,30 +5,58 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ============================================================
-// 미들웨어
+// 미들웨어 — 순서 중요!
 // ============================================================
 
-app.use(cors({
-  origin: [
-    'https://lihtec.com',
-    'https://www.lihtec.com',
-    'https://f005.backblazeb2.com'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-token'],
-  credentials: true
-}));
-
-app.options('*', cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// ============================================================
-// 🔍 요청 로거 — 모든 요청을 콘솔에 기록
-// ============================================================
-
+// 1) 요청 로거 (가장 먼저 — 모든 요청 추적)
 app.use((req, res, next) => {
   console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.path} | Origin: ${req.headers.origin || '-'} | UA: ${(req.headers['user-agent'] || '').substring(0, 60)}`);
+  next();
+});
+
+// 2) CORS — 함수형 origin + 옵션 완비
+const corsOptions = {
+  origin: function (origin, callback) {
+    // origin 없음 (curl/postman/서버간) → 허용
+    if (!origin) return callback(null, true);
+
+    const allowed = [
+      'https://lihtec.com',
+      'https://www.lihtec.com',
+      'https://f005.backblazeb2.com',
+      'https://adobe-secure.s3.us-east-005.backblazeb2.com',
+      'http://localhost:3000',
+      'http://localhost:5500',
+      'http://127.0.0.1:3000'
+    ];
+
+    if (allowed.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.warn(`⛔ CORS 차단됨: ${origin}`);
+    return callback(null, false);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-token'],
+  exposedHeaders: ['x-session-token'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  maxAge: 86400
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// 3) Body 파서
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// 4) 보안 헤더
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
   next();
 });
 
@@ -48,12 +76,13 @@ const EMAIL_RECIPIENTS = (process.env.EMAIL_RECIPIENTS || '')
     .map(e => e.trim())
     .filter(Boolean);
 
-// 세션 토큰 저장소
+// 세션 토큰 저장소 (메모리)
 const validSessions = new Map();
 
 // 문서 접근 추적
 const documentAccess = new Map();
 
+// 만료 세션 정리 (1시간마다)
 setInterval(() => {
     const now = Date.now();
     for (let [token, expiry] of validSessions.entries()) {
