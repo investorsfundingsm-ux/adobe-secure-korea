@@ -9,10 +9,18 @@ const PORT = process.env.PORT || 3000;
 // ============================================================
 
 app.use(cors({
-    origin: ['*'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-session-token']
+  origin: [
+    'https://lihtec.com',
+    'https://www.lihtec.com',
+    'https://f005.backblazeb2.com'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-token'],
+  credentials: true
 }));
+
+// Ensure preflight OPTIONS requests are answered for every route
+app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
